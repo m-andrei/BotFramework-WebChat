@@ -326,6 +326,11 @@ export const history: Reducer<HistoryState> = (
             // else fall through and treat this as a new message
         }
         case 'Receive_Message':
+            if(window.smart_assistant_history_key) {
+                var messages = state.activities.slice(state.activities.length - 50);
+                messages.push(action.activity);
+                localStorage.setItem(window.smart_assistant_history_key, JSON.stringify(messages));
+            }
             if (state.activities.find(a => a.id === action.activity.id)) return state; // don't allow duplicate messages
 
             return {

@@ -23,7 +23,9 @@ export interface ChatProps {
     locale?: string,
     selectedActivity?: BehaviorSubject<ActivityOrID>,
     sendTyping?: boolean,
+    historyKey?: string,
     formatOptions?: FormatOptions,
+    loadLatestHistory?: boolean,
     resize?: 'none' | 'window' | 'detect'
 }
 
@@ -72,6 +74,43 @@ export class Chat extends React.Component<ChatProps, {}> {
             Speech.SpeechRecognizer.setSpeechRecognizer(props.speechOptions.speechRecognizer);
             Speech.SpeechSynthesizer.setSpeechSynthesizer(props.speechOptions.speechSynthesizer);
         }
+        if(props.loadLatestHistory && props.loadLatestHistory == true && props.historyKey) {
+            window.smart_assistant_history_key = props.historyKey
+            var historyObject = localStorage.getItem(window.smart_assistant_history_key);
+            if (historyObject) {
+               var history: Activity[] = JSON.parse(historyObject);
+               const messages = this.buildHistory(
+                    history,
+                    0,
+                    props.user.id
+                );
+                this.injectMessages(messages);
+          }
+        }
+    }
+
+    private buildHistory(messages: Activity[], startIndex: number, agentId: string) {
+        console.log(this.store.getState());
+        return messages.map((message, messageIndex) => ({
+        type: "message",
+        text: message.text,
+        from: {
+            id: message.from.id,
+            name: message.from.name
+        },
+        timestamp: message.timestamp,
+        attachments: message.attachments,
+        id: `icm_bot_history|${startIndex + messageIndex}`,
+        }))
+    }
+
+    private injectMessages(messages: Activity[]) {
+        messages.forEach(activity => {
+        this.store.dispatch({
+            type: 'Receive_Message',
+            activity
+        })
+        });
     }
 
     private handleIncomingActivity(activity: Activity) {
